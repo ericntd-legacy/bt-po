@@ -37,7 +37,7 @@
         android:layout_below="@id/test_layout" >
         <!-- android:background="@drawable/waveform_border" > -->
 
-        <org.projectproto.yuscope.WaveformView
+        <sg.edu.dukenus.pononin.WaveformView
             android:id="@id/WaveformArea"
             android:layout_width="@dimen/waveform_med_w"
             android:layout_height="@dimen/waveform_med_h"

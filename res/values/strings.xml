@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources>
 
-	<string name="app_name">Bluetooth Pulse Oximeter v1.2</string>
+	<string name="app_name">PO Nonin v1.5</string>
     <string name="title_connecting">connecting...</string>
     <string name="title_connected_to">connected to:</string>
     <string name="title_not_connected">not connected</string>
