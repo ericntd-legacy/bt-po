@@ -5,7 +5,7 @@
  * should not be modified by hand.
  */
 
-package org.projectproto.yuscope;
+package sg.edu.dukenus.pononin;
 
 public final class R {
     public static final class array {

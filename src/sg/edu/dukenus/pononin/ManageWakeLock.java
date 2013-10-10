@@ -1,7 +1,5 @@
 package sg.edu.dukenus.pononin;
 
-import org.projectproto.yuscope.R;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.PowerManager;

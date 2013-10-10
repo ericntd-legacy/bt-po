@@ -18,8 +18,6 @@ package sg.edu.dukenus.pononin;
 
 import java.util.Set;
 
-import org.projectproto.yuscope.R;
-
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;

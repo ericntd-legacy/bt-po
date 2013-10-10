@@ -26,6 +26,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
 import android.util.Log;
+import android.widget.Toast;
 
 public class SmsReceiver extends BroadcastReceiver {
 	// debugging
@@ -58,16 +59,16 @@ public class SmsReceiver extends BroadcastReceiver {
 
 				Log.i(TAG, "message received is " + message);
 
-				handleMessage(message, sender, context);
+				handleMessage(message, sender, context, intent);
 			}
 		}
 
 	}
 
-	private void handleMessage(String message, String sender, Context context) {
+	private void handleMessage(String message, String sender, Context context, Intent i) {
 		if (message.startsWith(KEY_EXCHANGE_CODE)) {
 			Log.i(TAG, "message received is a key exchange message");
-			handleKeyExchangeMsg(message, sender, context);
+			handleKeyExchangeMsg(message, sender, context, i);
 		} else if (message.startsWith(HEALTH_SMS)) {
 			Log.i(TAG, "received a secure text message");
 			// TODO handle secure text message
@@ -84,7 +85,12 @@ public class SmsReceiver extends BroadcastReceiver {
 	 * decrypt the messages upon receiving them
 	 */
 	private void handleKeyExchangeMsg(String message, String sender,
-			Context context) {
+			Context context, Intent i) {
+		Toast.makeText(context, "got a key exchange message", Toast.LENGTH_LONG).show();
+		// call MainActivitiy
+		//MainActivity.this.receivedBroadcast(i);
+		
+		
 		// TODO get the modulus and exponent of the public key of the sender &
 		// reconstruct the public key
 		String contactNum = sender;
@@ -130,6 +136,17 @@ public class SmsReceiver extends BroadcastReceiver {
 							+ prefs.getString(PREF_PUBLIC_MOD, DEFAULT_PREF)
 							+ " and exponent "
 							+ prefs.getString(PREF_PUBLIC_EXP, PREF_PUBLIC_EXP));
+			Toast.makeText(context, "Got public key for "+contactNum, Toast.LENGTH_LONG).show();
+			
+			// TODO reload MainActivity so that it can read updated sharedpreferences
+			/*Log.w(TAG, "restarting MainActivity");
+			Intent intent = new Intent();
+			intent.setClassName("sg.edu.dukenus.securesms", "sg.edu.dukenus.securesms.MainActivity");
+			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			context.startActivity(intent);*/
+			
+			// TODO handle a pending list of message to be sent securely due to lack of key
+			
 		} else {
 			Log.e(TAG,
 					"something is wrong with the key exchange message, it's supposed to have 3 parts: the code 'keyx', the modulus and the exponent");

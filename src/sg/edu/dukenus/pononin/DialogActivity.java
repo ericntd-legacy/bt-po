@@ -1,7 +1,5 @@
 package sg.edu.dukenus.pononin;
 
-import org.projectproto.yuscope.R;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;

@@ -7,7 +7,6 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 import org.apache.http.conn.util.InetAddressUtils;
-import org.projectproto.yuscope.R;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -83,7 +82,7 @@ public class PopupActivity extends Activity {
 	 			    |Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
 	 			    |Intent.FLAG_ACTIVITY_SINGLE_TOP 
 	 			    |Intent.FLAG_ACTIVITY_NEW_TASK);
-   		    callIntent.setClass(this, BluetoothPulseOximeter.class);
+   		    callIntent.setClass(this, MainActivity.class);
    		    callIntent.putExtra("input_source_pref", "1");
    		    startActivity(callIntent);
     		//Toast.makeText(getBaseContext(), "ipaddress is not nothing", Toast.LENGTH_LONG).show();

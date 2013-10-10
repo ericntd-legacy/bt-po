@@ -1,7 +1,5 @@
 package sg.edu.dukenus.pononin;
 
-import org.projectproto.yuscope.R;
-
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.util.Log;

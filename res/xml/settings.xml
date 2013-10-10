@@ -64,7 +64,11 @@
   		android:entries="@array/output_data_format_options"
   		android:entryValues="@array/output_data_format_options_values"
   		android:dialogTitle="Select Output Data Format"
-  		android:defaultValue="0"/>  	
+  		android:defaultValue="0"/>
+  	<CheckBoxPreference
+  		android:key="LegacySMS"
+  		android:title="Enable Legacy SMS Format"
+  		android:summary="Frank's format: 'From 00:00:00:00:00:00; @HR@ = 0; @spO2@ = 0;'"/>	
   </PreferenceCategory>
   <PreferenceCategory
   	xmlns:android="http://schemas.android.com/apk/res/android"

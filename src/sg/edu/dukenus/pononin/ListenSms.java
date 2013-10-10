@@ -11,7 +11,6 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import org.apache.http.conn.util.InetAddressUtils;
-import org.projectproto.yuscope.R;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -270,7 +269,7 @@ public class ListenSms extends Service {
 		    	 			    |Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
 		    	 			    |Intent.FLAG_ACTIVITY_SINGLE_TOP 
 		    	 			    |Intent.FLAG_ACTIVITY_NEW_TASK);
-						callIntent.setClass(context, BluetoothPulseOximeter.class);
+						callIntent.setClass(context, MainActivity.class);
 						    
 						// get the sender phone and pass to destination app 
 						//String senderphone = getSenderno(msg[i]);

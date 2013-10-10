@@ -1,15 +1,25 @@
-package org.projectproto.yuscope;
+package sg.edu.dukenus.pononin;
 
 //import com.lit.poc.bluepulse.R;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.android.internal.telephony.ITelephony;
 
@@ -35,8 +45,15 @@ import android.text.Editable;
 //import android.text.format.DateFormat;
 import java.text.DateFormat;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
 import sg.edu.dukenus.securesms.crypto.MyKeyUtils;
 import sg.edu.dukenus.securesms.sms.SmsSender;
+import sg.edu.dukenus.securesms.utils.MyUtils;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -69,10 +86,10 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
-public class BluetoothPulseOximeter extends Activity implements
+public class MainActivity extends Activity implements
 		Button.OnClickListener {
 	// Debugging
-	private static final String TAG = "BluetoothPulseOximeter";
+	private static final String TAG = "MainActivity";
 	private static final boolean D = true;
 
 	// Run/Pause status
@@ -119,18 +136,18 @@ public class BluetoothPulseOximeter extends Activity implements
 
 	// Layout Views
 	private TextView mBTStatus;
-	private TextView time_per_div;
-	private TextView ch1_scale, ch2_scale;
-	private TextView ch1pos_label, ch2pos_label;
+	//private TextView time_per_div;
+	//private TextView ch1_scale, ch2_scale;
+	//private TextView ch1pos_label, ch2pos_label;
 	private TextView pulse_rate, pulse_sat;
 	private TextView txtHost, txtPort;
-	private RadioButton rb1, rb2;
-	private Button timebase_inc, timebase_dec;
-	private Button btn_scale_up, btn_scale_down;
-	private Button btn_pos_up, btn_pos_down;
+	//private RadioButton rb1, rb2;
+	//private Button timebase_inc, timebase_dec;
+	//private Button btn_scale_up, btn_scale_down;
+	//private Button btn_pos_up, btn_pos_down;
 	private Button mConnectButton;
 	private Button settingsBtn;
-	private ToggleButton run_buton;
+	//private ToggleButton run_buton;
 
 	// Name of the connected device
 	// private String mConnectedDeviceName = null;
@@ -153,10 +170,10 @@ public class BluetoothPulseOximeter extends Activity implements
 	static byte ch1_pos = 0, ch2_pos = 0; // 0 to 60
 	// What are wavefromArray and ch2_data?
 	private int[] wavefromArray = null;
-	private int[] ch2_data = null;
+	//private int[] ch2_data = null;
 
-	private int dataIndex = 0, dataIndex1 = 0, dataIndex2 = 0;
-	private boolean bDataAvailable = false;
+	//private int dataIndex = 0, dataIndex1 = 0, dataIndex2 = 0;
+	//private boolean bDataAvailable = false;
 
 	// Tracking frames and packets received
 	private int frameCount = 0;
@@ -211,7 +228,7 @@ public class BluetoothPulseOximeter extends Activity implements
 	public static final int PREF_INPUT_SRC_UDP = 1;
 	public static final int PREF_OUTPUT_TXT = 0;
 	public static final int PREF_OUTPUT_RAW = 1;
-	public static final String PREF_LEGACY_SMS = "Legacy SMS Format";
+	public static final String PREF_LEGACY_SMS = "LegacySMS";
 
 	private final String DEFAULT_MAC_ADDR = "00:00:00:00:00:00";
 	private final String PREF_MAC_ADDR = "macAddr";
@@ -219,21 +236,29 @@ public class BluetoothPulseOximeter extends Activity implements
 	private final boolean DEFAULT_LEGACY_SMS = false; // use the new format by
 														// default
 
-	private final String APP_CODE = "gmstelehealth";
+	//private final String APP_CODE = "gmstelehealth";
 
 	// Member object for the RFCOMM services
 	private UdpCommService mUdpCommClient = null;
 
-	private ListenSms listenSms;
-
-	private SmsSender smsSender;
+	//private ListenSms listenSms;
+	
+	// Sending measurement via SMS
+	private SmsSender smsSender = null;
+	private boolean pendingSMS = false;
+	private String measurementStr = "";
+	
+	private final String ACTION = "android.provider.Telephony.SMS_RECEIVED";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		Log.w(TAG, "onCreate");
+		
+		//???
 		Toast.makeText(getApplicationContext(),
 				"Connected to " + mConnectedDeviceName, Toast.LENGTH_SHORT)
 				.show();
-		super.onCreate(savedInstanceState);
 
 		// Set up the window layout
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -242,6 +267,7 @@ public class BluetoothPulseOximeter extends Activity implements
 		determineScreenSize();
 
 		bposettings = PreferenceManager.getDefaultSharedPreferences(this);
+		
 		// bposettings = getSharedPreferences(PREF_PO, Context.MODE_PRIVATE);
 		// if (D) Log.v("SharedPreferencesName", PreferenceManager.);
 		bposettingseditor = bposettings.edit();
@@ -328,6 +354,9 @@ public class BluetoothPulseOximeter extends Activity implements
 	@Override
 	public void onStart() {
 		super.onStart();
+		Log.i(TAG, "onStart");
+		
+		Log.i(TAG, "legacy SMS format is enabled? "+bposettings.getBoolean("CheckBoxLegacySMS", false));
 
 		// If BT is not on, request that it be enabled.
 		// setupOscilloscope() will then be called during onActivityResult
@@ -427,6 +456,7 @@ public class BluetoothPulseOximeter extends Activity implements
 	@Override
 	public synchronized void onResume() {
 		super.onResume();
+		Log.w(TAG, "onResume");
 
 		// Performing this check in onResume() covers the case in which BT was
 		// not enabled during onStart(), so we were paused to enable it...
@@ -450,8 +480,26 @@ public class BluetoothPulseOximeter extends Activity implements
 		frameCount = 0;
 		packetCount = 0;
 		RefreshSettings();
-		registerReceiver(smsReceiver, new IntentFilter(
-				"android.provider.Telephony.SMS_RECEIVED"));
+		
+		/*
+		 * receiver that receives SMSs
+		 */
+		IntentFilter iff = new IntentFilter();
+		iff.addAction(ACTION);
+		this.registerReceiver(mSmsReceiver, iff);
+	}
+	
+	@Override
+	public void onPause() {
+		super.onPause();
+		Log.w(TAG, "onPause");
+		this.unregisterReceiver(mSmsReceiver);
+	}
+	
+	@Override
+	public void onStop() {
+		super.onStop();
+		Log.w(TAG, "onStop");
 	}
 
 	private void setupOscilloscope() {
@@ -632,7 +680,7 @@ public class BluetoothPulseOximeter extends Activity implements
 				.show();
 	}
 
-	void SmsHrSpo2Values() {
+	/*void SmsHrSpo2Values() {
 
 		String macAddr = DEFAULT_MAC_ADDR;
 		if (bposettings != null) {
@@ -652,7 +700,7 @@ public class BluetoothPulseOximeter extends Activity implements
 					"Please enter doctor's phone number in 'Settings' menu.",
 					Toast.LENGTH_SHORT).show();
 		}
-	}
+	}*/
 
 	// TODO: to pass the preference name e.g. "Bluetooth PO"
 	// Format of the SMS:
@@ -806,17 +854,19 @@ public class BluetoothPulseOximeter extends Activity implements
 
 	@Override
 	public void onDestroy() {
-		super.onDestroy();
+		Log.w(TAG, "onDestroy");
 		// Stop the Bluetooth RFCOMM services
-		if (mRfcommClient != null)
-			mRfcommClient.stop();
-		if (mUdpCommClient != null)
-			mUdpCommClient.stop();
-		// release screen being on
-		if (mWakeLock.isHeld()) {
-			mWakeLock.release();
-		}
-		unregisterReceiver(smsReceiver);
+				if (mRfcommClient != null)
+					mRfcommClient.stop();
+				if (mUdpCommClient != null)
+					mUdpCommClient.stop();
+				// release screen being on
+				if (mWakeLock.isHeld()) {
+					mWakeLock.release();
+				}
+				//unregisterReceiver(smsReceiver);
+		
+		super.onDestroy();
 	}
 
 	/**
@@ -1286,7 +1336,7 @@ public class BluetoothPulseOximeter extends Activity implements
 	}
 
 	// getting messages from where?
-	private BroadcastReceiver smsReceiver = new BroadcastReceiver() {
+	/*private BroadcastReceiver smsReceiver = new BroadcastReceiver() {
 
 		@Override
 		public void onReceive(Context context, Intent intent) {
@@ -1341,7 +1391,7 @@ public class BluetoothPulseOximeter extends Activity implements
 			return retMsgs;
 		}
 
-	};
+	};*/
 
 	/*
 	 * Receivers that listen to the sent and delivered events of SMSs
@@ -1438,32 +1488,33 @@ public class BluetoothPulseOximeter extends Activity implements
 				public void onClick(View arg0) {
 					// TODO: redirect user to the settings view
 					Intent intent = new Intent().setClass(
-							BluetoothPulseOximeter.this,
+							MainActivity.this,
 							MenuSettingsActivity.class);
-					BluetoothPulseOximeter.this.startActivityForResult(intent,
+					MainActivity.this.startActivityForResult(intent,
 							0);
 				}
 			});
 	}
 
 	private void checkServerKey() {
-		String serverNum = bposettings.getString(PREF_DES_NUM, "");
-		Log.w(TAG, "stored server num is " + serverNum);
-
-		SharedPreferences prefs = getSharedPreferences(serverNum,
-				Context.MODE_PRIVATE);
-		String contactPubMod = prefs.getString(MyKeyUtils.PREF_PUBLIC_MOD,
-				MyKeyUtils.DEFAULT_PREF);
-		String contactPubExp = prefs.getString(MyKeyUtils.PREF_PUBLIC_EXP,
-				MyKeyUtils.DEFAULT_PREF);
-		if (!contactPubMod.isEmpty() && !contactPubExp.isEmpty()) {
-			Log.w(TAG, "public key stored for " + serverNum + " with mod: "
-					+ contactPubMod + " and exp: " + contactPubExp);
-
+		String contactNum = bposettings.getString(PREF_DES_NUM, "");
+		Log.w(TAG, "stored server num is " + contactNum);
+		
+		RSAPublicKeySpec publicKeySpec = MyKeyUtils.getRecipientsPublicKey(contactNum, getApplicationContext());
+		
+		if (publicKeySpec==null) {
+			Log.e(TAG, "server's key not found, requesting for it");
+			Toast.makeText(getApplicationContext(), "server's key not found, requesting for it", Toast.LENGTH_SHORT).show();
+			
+			// TODO request server's key
+			MyUtils.RequestKeyTask task = new MyUtils.RequestKeyTask(
+					contactNum, getApplicationContext());
+			task.execute();
 		} else {
-			Log.w(TAG, "public key not found for " + serverNum
-					+ " so where did it go?");
+			Log.w(TAG, "server's key found, ready to send secure message");
+			Toast.makeText(getApplicationContext(), "server's key found, ready to send secure message", Toast.LENGTH_SHORT).show();
 		}
+		
 	}
 
 	private void determineScreenSize() {
@@ -1494,10 +1545,14 @@ public class BluetoothPulseOximeter extends Activity implements
 			// macAddr = bposettings.getString(PREF_MAC_ADDR, DEFAULT_MAC_ADDR);
 			boolean legacySMS = bposettings.getBoolean(PREF_LEGACY_SMS,
 					DEFAULT_LEGACY_SMS);
+			Log.w(TAG, "sending measurement, legacy sms format is enabled? "+legacySMS);
 			String phoneNo = bposettings.getString(PREF_DES_NUM, "");
 			smsSender = new SmsSender(phoneNo);
+			
+			// TODO check if a key is available for the destination number, if not request for it
+			checkServerKey();
 
-			String measurementStr = "";
+			//String measurementStr = "";
 			// construcSMS(int weight, int systolic, int diastolic, int pulse,
 			// int spo2, String measurementDate)
 			// passing -1 as value for weight, systolic and diastolic
@@ -1506,17 +1561,23 @@ public class BluetoothPulseOximeter extends Activity implements
 			// format of the measurement string is:
 			// "@MAC=[mac address of the pulse oximeter]@ @datetime=[yyyy-mm-dd HH:mm:ss]@ @hr=[hr]@ @spo2=[spo2]@"
 			if (legacySMS) {
+				Log.w(TAG, "constructing the measurement based on Frank's format - ");
 				measurementStr = constructLegacySMS(PREF_PO, -1, -1, -1, HR,
 						SPO2, null);
 			} else {
+				Log.w(TAG, "constructing the measurement based on new format by Kaung");
 				measurementStr = constructMeasurementStr(PREF_PO, -1, -1, -1, HR, SPO2,
 						null);
 			}
 
 			if (phoneNo.length() > 0) {
 				// sendSMS(phoneNo, measurementStr);
-				smsSender
-						.sendSecureSMS(getApplicationContext(), measurementStr);
+				RSAPublicKeySpec publicKeySpec = MyKeyUtils.getRecipientsPublicKey(phoneNo, getApplicationContext());
+				if (publicKeySpec==null) {
+					pendingSMS = true;
+					return;
+				}
+				smsSender.sendSecureSMS(getApplicationContext(), measurementStr); // add "gmstelehealth" to new format but have to check what to do with old format
 			} else {
 				Toast.makeText(
 						getBaseContext(),
@@ -1525,5 +1586,283 @@ public class BluetoothPulseOximeter extends Activity implements
 			}
 		}
 	}
+	
+	public void onPublicKeyReceived(Intent i, String contactNum) {
+		// SmsReceiver will try to trigger this
+		
+		SharedPreferences prefs = getSharedPreferences(contactNum, Context.MODE_PRIVATE);
+		String pubMod = prefs.getString(MyKeyUtils.PREF_PUBLIC_MOD, MyKeyUtils.DEFAULT_PREF);
+		
+		Log.w(TAG, "public modulus updated to "+pubMod);
+		Toast.makeText(getApplicationContext(), "Ready to send secure messages to "+contactNum, Toast.LENGTH_LONG).show();
+		
+		// TODO check if there is a message pending to be sent and send it
+		if (pendingSMS&&!measurementStr.isEmpty()&&smsSender!=null) {
+			smsSender.sendSecureSMS(getApplicationContext(), measurementStr);
+		}
+	}
+	
+	private BroadcastReceiver mSmsReceiver = new BroadcastReceiver() {
+		// SharedPreferences
+		private final String PREFS = "MyKeys";
+		private final String PREF_PUBLIC_MOD = "PublicModulus";
+		private final String PREF_PUBLIC_EXP = "PublicExponent";
+		private final String PREF_PRIVATE_MOD = "PrivateModulus";
+		private final String PREF_PRIVATE_EXP = "PrivateExponent";
+
+		// private final String PREF_PHONE_NUMBER = "PhoneNumber";
+		// private final String PREF_RECIPIENT_NUM = "PhoneNumber";
+
+		private final String DEFAULT_PREF = "";
+
+		// sms codes
+		private final String KEY_EXCHANGE_CODE = "keyx";
+		private final String HEALTH_SMS = "gmstelehealth";
+		
+        @Override
+        public void onReceive(Context context, Intent intent) {
+        	//intent.putExtra(INTENT_SOURCE, "this comes from the sms receiver");
+        	
+        	
+        	// updating a sharedpreferences boolean value, hopefully the
+        				// activity can see the updated value after that
+        				SharedPreferences prefs = getSharedPreferences("prefs",
+        						Context.MODE_PRIVATE);
+        				SharedPreferences.Editor prefseditor = prefs.edit();
+        				prefseditor.putBoolean("receivedsms", true);
+        				prefseditor.commit();
+        	
+            //MainActivity.this.receivedBroadcast(intent);
+            
+            Map<String, String> msg = retrieveMessages(intent);
+
+    		Log.i(TAG, "we received " + msg.size() + " messages in total");
+    		if (msg != null) {
+    			for (String sender : msg.keySet()) {
+    				String message = msg.get(sender);
+
+    				Log.i(TAG, "message received is " + message);
+
+    				handleMessage(message, sender, context, intent);
+    			}
+    		}
+        }
+        
+        private void handleMessage(String message, String sender, Context context, Intent i) {
+    		if (message.startsWith(KEY_EXCHANGE_CODE)) {
+    			Log.i(TAG, "message received is a key exchange message");
+    			handleKeyExchangeMsg(message, sender, context, i);
+    		} else if (message.startsWith(HEALTH_SMS)) {
+    			Log.i(TAG, "received a secure text message");
+    			// TODO handle secure text message
+    			handleEncryptedMsg(message, sender, context);
+    		} else {
+    			Log.i(TAG, "Message not recognised, not doing anything");
+    		}
+    	}
+
+    	/*
+    	 * the sender here is actually the recipient of future encrypted text
+    	 * messages the recipient's public key will be used to encrypt the future
+    	 * text messages so that the recipient can use his/ her private key to
+    	 * decrypt the messages upon receiving them
+    	 */
+    	private void handleKeyExchangeMsg(String message, String sender,
+    			Context context, Intent i) {
+    		Toast.makeText(context, "got a key exchange message", Toast.LENGTH_LONG).show();
+    		// call MainActivitiy
+    		//MainActivity.this.receivedBroadcast(i);
+    		
+    		
+    		// TODO get the modulus and exponent of the public key of the sender &
+    		// reconstruct the public key
+    		String contactNum = sender;
+    		String[] parts = message.split(" "); // expected structure of the key exchange message: "keyx modBase64Encoded expBase64Encoded"
+    		if (parts.length == 3) {
+    			String recipientPubModBase64Str = parts[1];
+    			String recipientPubExpBase64Str = parts[2];
+
+    			/*
+    			 * ================================ for testing only - to be removed
+    			 * later
+    			 */
+    			// verifyRecipientsPublicKey(recipientPubModBase64Str,recipientPubExpBase64Str,
+    			// context);
+    			/*
+    			 * ================================
+    			 */
+
+    			byte[] recipientPubModBA = Base64.decode(recipientPubModBase64Str,
+    					Base64.DEFAULT); // TODO to decide whether to use NO_WRAP or NO_PADDING here
+    			byte[] recipientPubExpBA = Base64.decode(recipientPubExpBase64Str,
+    					Base64.DEFAULT);
+    			BigInteger recipientPubMod = new BigInteger(recipientPubModBA);
+    			BigInteger recipientPubExp = new BigInteger(recipientPubExpBA);
+
+    			Log.i(TAG, "the recipient's public key modulus is "
+    					+ recipientPubMod + " and exponent is " + recipientPubExp);
+
+    			// TODO store the intended recipient's public key in the app's
+    			// SharedPreferences
+    			SharedPreferences prefs = context.getSharedPreferences(contactNum,
+    					Context.MODE_PRIVATE);
+    			SharedPreferences.Editor prefsEditor = prefs.edit();
+
+    			prefsEditor.putString(PREF_PUBLIC_MOD, recipientPubModBase64Str);
+    			prefsEditor.putString(PREF_PUBLIC_EXP, recipientPubExpBase64Str);
+    			// prefsEditor.putString(PREF_PHONE_NUMBER, recipient);
+    			prefsEditor.commit();
+
+    			Log.i(TAG,
+    					"successfully remembered the contact " + contactNum
+    							+ " and its public key module "
+    							+ prefs.getString(PREF_PUBLIC_MOD, DEFAULT_PREF)
+    							+ " and exponent "
+    							+ prefs.getString(PREF_PUBLIC_EXP, PREF_PUBLIC_EXP));
+    			Toast.makeText(context, "Got public key for "+contactNum, Toast.LENGTH_LONG).show();
+    			
+    			
+    			// TODO inform the UI Activity that public key is received
+    			MainActivity.this.onPublicKeyReceived(i, contactNum);
+    			
+    			// TODO reload MainActivity so that it can read updated sharedpreferences
+    			/*Log.w(TAG, "restarting MainActivity");
+    			Intent intent = new Intent();
+    			intent.setClassName("sg.edu.dukenus.securesms", "sg.edu.dukenus.securesms.MainActivity");
+    			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    			context.startActivity(intent);*/
+    			
+    			// TODO handle a pending list of message to be sent securely due to lack of key
+    			
+    		} else {
+    			Log.e(TAG,
+    					"something is wrong with the key exchange message, it's supposed to have 3 parts: the code 'keyx', the modulus and the exponent");
+    		}
+
+    	}
+
+    	private void handleEncryptedMsg(String message, String sender,
+    			Context context) {
+    		String contactNum = sender;
+    		String[] parts = message.split(" ");
+    		if (parts.length == 2) {
+
+    			// TODO get the private key of the intended recipient
+    			SharedPreferences prefs = context.getSharedPreferences(
+    					PREFS, Context.MODE_PRIVATE);
+
+    			String privateMod = prefs.getString(PREF_PRIVATE_MOD, DEFAULT_PREF);
+    			String priavteExp = prefs.getString(PREF_PRIVATE_EXP, DEFAULT_PREF);
+    			// String recipient = prefs.getString(PREF_RECIPIENT_NUM,
+    			// DEFAULT_PREF);
+    			if (!privateMod.equals(DEFAULT_PREF)
+    					&& !priavteExp.equals(DEFAULT_PREF)) {
+    				byte[] recipientPrivateModBA = Base64.decode(privateMod,
+    						Base64.DEFAULT);
+    				byte[] recipientPrivateExpBA = Base64.decode(priavteExp,
+    						Base64.DEFAULT);
+    				BigInteger recipientPrivateMod = new BigInteger(
+    						recipientPrivateModBA);
+    				BigInteger recipientPrivateExp = new BigInteger(
+    						recipientPrivateExpBA);
+    				RSAPrivateKeySpec recipientPrivateKeySpec = new RSAPrivateKeySpec(
+    						recipientPrivateMod, recipientPrivateExp);
+
+    				// TODO decrypt the encrypted message
+    				decryptMsg(parts[1], recipientPrivateKeySpec);
+    			} else {
+    				Log.e(TAG, "private key could not be retrieved");
+    			}
+    		} else {
+    			Log.e(TAG,
+    					"message has incorrect format, it's suppose to be 'gmstelehealth [measurements]'");
+    		}
+    	}
+
+    	private void decryptMsg(String msg, RSAPrivateKeySpec privateKey) {
+    		try {
+    			KeyFactory fact = KeyFactory.getInstance("RSA");
+
+    			PrivateKey privKey = fact.generatePrivate(privateKey);
+
+    			// TODO encrypt the message and send it
+    			// first decode the Base64 encoded string to get the encrypted
+    			// message
+    			byte[] encryptedMsg = Base64.decode(msg, Base64.DEFAULT);
+    			Log.i(TAG, "We got a message: " + msg
+    					+ " and after decode we got the encrypted message : "
+    					+ new String(encryptedMsg));
+
+    			Cipher cipher = Cipher.getInstance("RSA");
+    			cipher.init(Cipher.DECRYPT_MODE, privKey);
+    			// byte[] msgByteArray = msg.getBytes();
+
+    			byte[] cipherData = cipher.doFinal(encryptedMsg);
+
+    			String decryptedMsg = new String(cipherData);
+    			Log.i(TAG, "After decryption, we got the original message '"
+    					+ decryptedMsg + "'");
+
+    		} catch (NoSuchAlgorithmException e) {
+    			Log.e(TAG, "RSA algorithm not available", e);
+    		} catch (InvalidKeySpecException e) {
+    			Log.e(TAG, "", e);
+    		} catch (NoSuchPaddingException e) {
+    			Log.e(TAG, "", e);
+    		} catch (InvalidKeyException e) {
+    			Log.e(TAG, "", e);
+    		} catch (BadPaddingException e) {
+    			Log.e(TAG, "", e);
+    		} catch (IllegalBlockSizeException e) {
+    			Log.e(TAG, "", e);
+    		}
+    	}
+
+    	private Map<String, String> retrieveMessages(Intent intent) {
+    		Map<String, String> msg = null;
+    		SmsMessage[] msgs = null;
+    		Bundle bundle = intent.getExtras();
+
+    		if (bundle != null && bundle.containsKey("pdus")) {
+    			Object[] pdus = (Object[]) bundle.get("pdus");
+
+    			if (pdus != null) {
+    				int nbrOfpdus = pdus.length;
+    				msg = new HashMap<String, String>(nbrOfpdus);
+    				msgs = new SmsMessage[nbrOfpdus];
+
+    				// There can be multiple SMS from multiple senders, there can be
+    				// a maximum of nbrOfpdus different senders
+    				// However, send long SMS of same sender in one message
+    				for (int i = 0; i < nbrOfpdus; i++) {
+    					msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
+
+    					String originatinAddress = msgs[i].getOriginatingAddress();
+
+    					// Check if index with number exists
+    					if (!msg.containsKey(originatinAddress)) {
+    						// Index with number doesn't exist
+    						// Save string into associative array with sender number
+    						// as index
+    						msg.put(msgs[i].getOriginatingAddress(),
+    								msgs[i].getMessageBody());
+
+    					} else {
+    						// Number has been there, add content but consider that
+    						// msg.get(originatinAddress) already contains
+    						// sms:sndrNbr:previousparts of SMS,
+    						// so just add the part of the current PDU
+    						String previousparts = msg.get(originatinAddress);
+    						String msgString = previousparts
+    								+ msgs[i].getMessageBody();
+    						msg.put(originatinAddress, msgString);
+    					}
+    				}
+    			}
+    		}
+
+    		return msg;
+    	}
+    };
 
 }

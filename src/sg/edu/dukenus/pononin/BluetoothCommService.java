@@ -87,7 +87,7 @@ public class BluetoothCommService {
 		// Give the new state to the Handler so the UI Activity can update
 		// mHandler.obtainMessage(BluePulse.MESSAGE_STATE_CHANGE, state,
 		// -1).sendToTarget();
-		mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_STATE_CHANGE,
+		mHandler.obtainMessage(MainActivity.MESSAGE_STATE_CHANGE,
 				state, -1).sendToTarget();
 	}
 
@@ -196,9 +196,9 @@ public class BluetoothCommService {
 
 		// Send the name of the connected device back to the UI Activity
 		Message msg = mHandler
-				.obtainMessage(BluetoothPulseOximeter.MESSAGE_DEVICE_NAME);
+				.obtainMessage(MainActivity.MESSAGE_DEVICE_NAME);
 		Bundle bundle = new Bundle();
-		bundle.putString(BluetoothPulseOximeter.DEVICE_NAME, device.getName());
+		bundle.putString(MainActivity.DEVICE_NAME, device.getName());
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 
@@ -254,9 +254,9 @@ public class BluetoothCommService {
 
 		// Send a failure message back to the Activity
 		Message msg = mHandler
-				.obtainMessage(BluetoothPulseOximeter.MESSAGE_TOAST);
+				.obtainMessage(MainActivity.MESSAGE_TOAST);
 		Bundle bundle = new Bundle();
-		bundle.putString(BluetoothPulseOximeter.TOAST,
+		bundle.putString(MainActivity.TOAST,
 				"Unable to connect device");
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
@@ -270,9 +270,9 @@ public class BluetoothCommService {
 
 		// Send a failure message back to the Activity
 		Message msg = mHandler
-				.obtainMessage(BluetoothPulseOximeter.MESSAGE_TOAST);
+				.obtainMessage(MainActivity.MESSAGE_TOAST);
 		Bundle bundle = new Bundle();
-		bundle.putString(BluetoothPulseOximeter.TOAST,
+		bundle.putString(MainActivity.TOAST,
 				"Device connection was lost");
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
@@ -502,7 +502,7 @@ public class BluetoothCommService {
 					//
 					// Send the obtained bytes to the UI Activity
 					// if (bytesReceived>-1) {
-					mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_READ,
+					mHandler.obtainMessage(MainActivity.MESSAGE_READ,
 							bytesReceived, -1, buffer).sendToTarget();
 					Thread.sleep(1000 / 75);// why sleep? smoothen wave but are
 											// these lost frames? Actually,
@@ -585,7 +585,7 @@ public class BluetoothCommService {
 				mmOutStream.write(buffer);
 
 				// Share the sent message back to the UI Activity
-				mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_WRITE,
+				mHandler.obtainMessage(MainActivity.MESSAGE_WRITE,
 						-1, -1, buffer).sendToTarget();
 			} catch (IOException e) {
 				if (D)
