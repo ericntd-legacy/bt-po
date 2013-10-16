@@ -51,6 +51,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 import sg.edu.dukenus.securesms.crypto.MyKeyUtils;
+import sg.edu.dukenus.securesms.sms.SmsReceiver;
 import sg.edu.dukenus.securesms.sms.SmsSender;
 import sg.edu.dukenus.securesms.utils.MyUtils;
 import android.util.Base64;
@@ -221,6 +222,7 @@ public class MainActivity extends Activity implements
 	private boolean lowBat = false;
 
 	SharedPreferences bposettings = null;
+	public static final String PONONIN_SETTINGS = "PONoninSettings";
 	SharedPreferences.Editor bposettingseditor = null;
 	public static final String PREF_FILE = "org.projectproto.yuscope_preferences";
 	public static final String PREF_PO = "BTPO";
@@ -245,6 +247,7 @@ public class MainActivity extends Activity implements
 	
 	// Sending measurement via SMS
 	private SmsSender smsSender = null;
+	private SmsReceiver mSmsReceiver;
 	private boolean pendingSMS = false;
 	private String measurementStr = "";
 	
@@ -341,13 +344,16 @@ public class MainActivity extends Activity implements
 
 		// SmsReceiver that handle key exchanges messages
 		registerReceivers();
+		
+		mSmsReceiver = new SmsReceiver();
 
 		// String message =
 		// "gmstelehealth @systolic=100@ @diastolic=70@ @hr=70@";
 		// sendEncryptedMessage(message);
-
 		// TODO Check keys in SharedPreferences for server's number +6584781395
-		checkServerKey();
+				//checkServerKey();
+		
+		//MyKeyUtils.checkKeys(PONONIN_SETTINGS, "phone_num", getApplicationContext());
 
 	}
 
@@ -402,6 +408,9 @@ public class MainActivity extends Activity implements
 		}
 
 		RefreshSettings();
+		
+		//MyKeyUtils.checkKeys(PONONIN_SETTINGS, "phone_num", getApplicationContext());
+		checkServerKey();
 	}
 
 	@Override
@@ -1602,7 +1611,7 @@ public class MainActivity extends Activity implements
 		}
 	}
 	
-	private BroadcastReceiver mSmsReceiver = new BroadcastReceiver() {
+	/*private BroadcastReceiver mSmsReceiver = new BroadcastReceiver() {
 		// SharedPreferences
 		private final String PREFS = "MyKeys";
 		private final String PREF_PUBLIC_MOD = "PublicModulus";
@@ -1661,12 +1670,12 @@ public class MainActivity extends Activity implements
     		}
     	}
 
-    	/*
+    	
     	 * the sender here is actually the recipient of future encrypted text
     	 * messages the recipient's public key will be used to encrypt the future
     	 * text messages so that the recipient can use his/ her private key to
     	 * decrypt the messages upon receiving them
-    	 */
+    	 
     	private void handleKeyExchangeMsg(String message, String sender,
     			Context context, Intent i) {
     		Toast.makeText(context, "got a key exchange message", Toast.LENGTH_LONG).show();
@@ -1682,15 +1691,15 @@ public class MainActivity extends Activity implements
     			String recipientPubModBase64Str = parts[1];
     			String recipientPubExpBase64Str = parts[2];
 
-    			/*
+    			
     			 * ================================ for testing only - to be removed
     			 * later
-    			 */
+    			 
     			// verifyRecipientsPublicKey(recipientPubModBase64Str,recipientPubExpBase64Str,
     			// context);
-    			/*
+    			
     			 * ================================
-    			 */
+    			 
 
     			byte[] recipientPubModBA = Base64.decode(recipientPubModBase64Str,
     					Base64.DEFAULT); // TODO to decide whether to use NO_WRAP or NO_PADDING here
@@ -1726,11 +1735,11 @@ public class MainActivity extends Activity implements
     			MainActivity.this.onPublicKeyReceived(i, contactNum);
     			
     			// TODO reload MainActivity so that it can read updated sharedpreferences
-    			/*Log.w(TAG, "restarting MainActivity");
+    			Log.w(TAG, "restarting MainActivity");
     			Intent intent = new Intent();
     			intent.setClassName("sg.edu.dukenus.securesms", "sg.edu.dukenus.securesms.MainActivity");
     			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    			context.startActivity(intent);*/
+    			context.startActivity(intent);
     			
     			// TODO handle a pending list of message to be sent securely due to lack of key
     			
@@ -1863,6 +1872,6 @@ public class MainActivity extends Activity implements
 
     		return msg;
     	}
-    };
+    };*/
 
 }

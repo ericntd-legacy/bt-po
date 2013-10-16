@@ -128,7 +128,7 @@ public class SmsSender {
 		// Context.MODE_PRIVATE);
 		if (this.recipientNum==null || this.recipientNum.isEmpty()) {
 			Log.e(TAG, "Recipient number is not set: "+this.recipientNum);
-			MyUtils.alert("Recipient number not set", context);
+			//MyUtils.alert("Recipient number not set", context); // can do this here because this is called in doInBackground()
 		} else {
 
 			String pubMod = MyKeyUtils.getPubMod(MyKeyUtils.PREFS_MY_KEYS, context);
@@ -141,7 +141,7 @@ public class SmsSender {
 				sendKeyExchangeSMS(this.recipientNum, pubMod, pubExp, context);
 			} else {
 				Log.e(TAG, "mod or exp of public key not found");
-				MyUtils.alert("key not found, please generate first", context);
+				//MyUtils.alert("key not found, please generate first", context);
 			}
 		}
 	}

@@ -18,7 +18,6 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
-import sg.edu.dukenus.bpmomron.SettingsActivity;
 import sg.edu.dukenus.securesms.sms.SmsSender;
 import sg.edu.dukenus.securesms.utils.MyUtils;
 
@@ -371,14 +370,14 @@ public class MyKeyUtils {
 
 	}
 
-	public static void checkKeys(Context context) {
+	public static void checkKeys(String prefName, String serverNumPref, Context context) {
 		/*
 		 * Check existing public key of the number set in Settings e.g. Gammu
 		 * server +6584781395 request for key if not found
 		 */
 		SharedPreferences prefs1 = context.getSharedPreferences(
-				SettingsActivity.PREF_BPM, Context.MODE_PRIVATE);
-		String setServerNum = prefs1.getString(SettingsActivity.PREF_DES_NUM,
+				prefName, Context.MODE_PRIVATE);
+		String setServerNum = prefs1.getString(serverNumPref,
 				"");
 		Log.w(TAG, ">> checkKeys() - checking whether a key is stored for "
 				+ setServerNum);
