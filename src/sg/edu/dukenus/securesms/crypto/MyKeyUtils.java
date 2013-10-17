@@ -300,10 +300,10 @@ public class MyKeyUtils {
 			String pubExpBase64Str = Base64.encodeToString(pubExpBA,
 					Base64.NO_WRAP);
 
-			Log.i(TAG, "the modulus of the current user's public key is "
+			/*Log.i(TAG, "the modulus of the current user's public key is "
 					+ pubModBI + " and the exponent is " + pubExpBI
 					+ " | encoded module is " + pubModBase64Str
-					+ " | encoded exponent is " + pubExpBase64Str);
+					+ " | encoded exponent is " + pubExpBase64Str);*/
 
 			savePublicKey(pubModBase64Str, pubExpBase64Str, context);
 
@@ -330,10 +330,10 @@ public class MyKeyUtils {
 					Base64.NO_WRAP);
 			String privateExpBase64Str = Base64.encodeToString(privateExpBA,
 					Base64.NO_WRAP);
-			Log.i(TAG, "the modulus of the current user's private key is "
+			/*Log.i(TAG, "the modulus of the current user's private key is "
 					+ privateModBI + " and the exponent is " + privateExpBI
 					+ " | encoded module is " + privateModBase64Str
-					+ " | encoded exponent is " + privateExpBase64Str);
+					+ " | encoded exponent is " + privateExpBase64Str);*/
 
 			savePrivateKey(privateModBase64Str, privateExpBase64Str, context);
 
@@ -354,13 +354,14 @@ public class MyKeyUtils {
 	}
 
 	public static void requestForKey(String contactNum, Context context) {
-		// Log.w(TAG, "hey why is this not running?");
+		Log.w(TAG, "Requesting key for contact "+contactNum);
 		// get user's own keys
 		boolean keys = MyKeyUtils.getKeys(DEFAULT_KEY_SIZE, context);
 
 		if (keys) {
 			Log.w(TAG, ">> requestForKey() - user's own keys found");
 			SmsSender smsSender = new SmsSender(contactNum);
+			smsSender.setRecipientNum(contactNum);
 
 			smsSender.sendKeyExchangeSMS(context);
 		} else {
