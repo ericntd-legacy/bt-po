@@ -24,8 +24,13 @@ public class SmsSender {
 
 	private String recipientNum;
 	private String message;
-
-	private final String HEALTH_SMS = "gmstelehealth";
+	
+	/*
+	 * IMPORTANT: there is 1 trailing space character at the end of the SMS prefixes
+	 */
+	public static final String HEALTH_SMS_PREFIX = "gmstelehealth ";
+	public static final String LEGACY_SMS_PREFIX = "From ";
+	
 
 	public SmsSender(String phoneNum, String msg) {
 		this.recipientNum = phoneNum;
@@ -201,7 +206,7 @@ public class SmsSender {
 			// TODO encode the main content of the message and compose the SMS
 			// message
 
-			String smsMsg = HEALTH_SMS + " " + processedMeasurementStr;
+			String smsMsg = HEALTH_SMS_PREFIX + processedMeasurementStr;
 			Log.w(TAG, "measurement string after encryption: " + encrypted
 					+ " and then after base64 encoding: "
 					+ processedMeasurementStr);

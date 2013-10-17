@@ -371,6 +371,14 @@ public class MyKeyUtils {
 
 	}
 
+	/*
+	 * Check for existence of the server's key
+	 * It first checks whether server's number is set in the app's main SharedPreferences
+	 * Then it checks whether a key is available for such number
+	 * arguments:
+	 * 1. prefName : - the name of the app's main SharedPreferences
+	 * 2. serverNumPref: - the name of the SharedPreferences value which the server's number is stored to
+	 */
 	public static void checkKeys(String prefName, String serverNumPref, Context context) {
 		/*
 		 * Check existing public key of the number set in Settings e.g. Gammu

@@ -260,9 +260,9 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 		Log.w(TAG, "onCreate");
 
 		// ???
-		Toast.makeText(getApplicationContext(),
+		/*Toast.makeText(getApplicationContext(),
 				"Connected to " + mConnectedDeviceName, Toast.LENGTH_SHORT)
-				.show();
+				.show();*/
 
 		// Set up the window layout
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
