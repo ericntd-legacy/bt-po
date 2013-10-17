@@ -181,9 +181,6 @@ public class SmsSender {
 		 * return; }
 		 */
 
-		Log.i(TAG, "sendSecureSMS(" + this.message + ", " + this.recipientNum
-				+ ")");
-
 		try {
 			Log.d(TAG, "measurement before encryption: " + measurementStr
 					+ " and recipient's key is not null "
@@ -212,6 +209,8 @@ public class SmsSender {
 
 			// set the final message to be sent
 			this.message = smsMsg;
+			Log.i(TAG, "sendSecureSMS(" + this.message + ", " + this.recipientNum
+					+ ")");
 
 			// TextView debug = (TextView) findViewById(R.id.DebugMessages);
 			// debug.append("Sending secure sms: '" + smsMsg +
@@ -234,5 +233,37 @@ public class SmsSender {
 			Log.e(TAG, "Exception happens", e);
 		}
 
+	}
+	
+	/*
+	 * send health measurement strings in plaintext
+	 */
+	public void sendPlainText(Context context, String measurementStr, String prefix) {
+		String smsMsg = prefix + measurementStr;
+		
+		Log.w(TAG, "complete message to be sent: '" + smsMsg + "'");
+
+		// set the final message to be sent
+		this.message = smsMsg;
+		Log.i(TAG, ">> sendPlainText(" + this.message + ", " + this.recipientNum
+				+ ")");
+
+		// TextView debug = (TextView) findViewById(R.id.DebugMessages);
+		// debug.append("Sending secure sms: '" + smsMsg +
+		// "' with length: "+smsMsg.length());
+		// TODO send the SMS message
+		Log.w(TAG, "length of the message is " + smsMsg.length());
+		if (smsMsg.length() > 160) {
+			Log.i(TAG, "sms is " + this.message + " and recipient is "
+					+ this.recipientNum);
+			sendLongSMS(context);
+			// for testing only
+			// sendSMS(recipient, "gmstelehealth eKAoUlBFA9JEU31pRjHa");
+			// //this message should be short enough or is it?
+		} else {
+			Log.i(TAG, "sms is " + this.message + " and recipient is "
+					+ this.recipientNum);
+			sendSMS(context);
+		}
 	}
 }

@@ -229,13 +229,15 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 	public static final int PREF_INPUT_SRC_UDP = 1;
 	public static final int PREF_OUTPUT_TXT = 0;
 	public static final int PREF_OUTPUT_RAW = 1;
-	public static final String PREF_LEGACY_SMS = "LegacySMS";
+	public static final String PREF_LEGACY_SMS = "CheckboxLegacySMS";
+	public static final String PREF_SECURE_SMS = "CheckboxSecureSMS";
 
 	private final String DEFAULT_MAC_ADDR = "00:00:00:00:00:00";
 	private final String PREF_MAC_ADDR = "macAddr";
 	private final String PREF_DES_NUM = "phone_num";
 	private final boolean DEFAULT_LEGACY_SMS = false; // use the new format by
 														// default
+	private final boolean DEFAULT_SECURE_SMS = true;
 
 	// private final String APP_CODE = "gmstelehealth";
 
@@ -267,7 +269,14 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 		setContentView(R.layout.main);
 
 		determineScreenSize();
-
+		
+		
+		/*
+		 * SMS settings
+		 * 1. SMS encryption is enabled by default - applicable to new format 'gmstelehealth @sys=110@...' only
+		 * 2. Legacy SMS format ('From [MAC address];...') is disabled by default
+		 */
+		//PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.settings, false);
 		bposettings = PreferenceManager.getDefaultSharedPreferences(this);
 
 		// bposettings = getSharedPreferences(PREF_PO, Context.MODE_PRIVATE);
@@ -354,6 +363,7 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 
 		// MyKeyUtils.checkKeys(PONONIN_SETTINGS, "phone_num",
 		// getApplicationContext());
+		
 
 	}
 
@@ -362,9 +372,10 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 		super.onStart();
 		Log.w(TAG, "onStart");
 
-		Log.i(TAG,
+		Log.w(TAG,
 				"legacy SMS format is enabled? "
-						+ bposettings.getBoolean("CheckBoxLegacySMS", false));
+						+ bposettings.getBoolean(PREF_LEGACY_SMS, false));
+		Log.w(TAG, "SMS encryption is enabled? "+bposettings.getBoolean(PREF_SECURE_SMS, true));
 
 		// If BT is not on, request that it be enabled.
 		// setupOscilloscope() will then be called during onActivityResult
@@ -772,14 +783,14 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 		str = str.trim();
 
 		if (D)
-			Log.w(TAG, "The exact SMS message was '" + str + "'");
+			Log.w(TAG, "The exact final measurement string is: '" + str + "'");
 		return str;
 	}
 
 	// From MAC; @HR@ = 90; @spO2@ = 97;
-	private String constructLegacySMS(String pref, int weight, int systolic,
+	private String constructLegacyMeasurementStr(String pref, int weight, int systolic,
 			int diastolic, int pulse, int spo2, String measurementDate) {
-		String msg = "From ";
+		String msg = "";
 
 		// MAC address of the health device
 		String macAddr = DEFAULT_MAC_ADDR;
@@ -808,7 +819,7 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 		msg = msg.trim();
 
 		if (D)
-			Log.w(TAG, "The exact SMS message was '" + msg + "'");
+			Log.w(TAG, "The final measurement string is: '" + msg + "'");
 
 		return msg;
 	}
@@ -1548,10 +1559,14 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 	private void sendMeasurement() {
 		if (bposettings != null) {
 			// macAddr = bposettings.getString(PREF_MAC_ADDR, DEFAULT_MAC_ADDR);
-			boolean legacySMS = bposettings.getBoolean(PREF_LEGACY_SMS,
-					DEFAULT_LEGACY_SMS);
+			boolean legacySMS = bposettings.getBoolean(PREF_LEGACY_SMS,DEFAULT_LEGACY_SMS);
+			boolean secureSMS = bposettings.getBoolean(PREF_SECURE_SMS, DEFAULT_SECURE_SMS);
 			Log.w(TAG, "sending measurement, legacy sms format is enabled? "
 					+ legacySMS);
+			Log.w(TAG, "sending measurement, secure sms is enabled? "
+					+ secureSMS);
+			
+			
 			String phoneNo = bposettings.getString(PREF_DES_NUM, "");
 			if (phoneNo.isEmpty()) {
 				MyUtils.alert("Please enter server's number", MainActivity.this);
@@ -1574,7 +1589,7 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 				if (legacySMS) {
 					Log.w(TAG,
 							"constructing the measurement based on Frank's format - ");
-					measurementStr = constructLegacySMS(PREF_PO, -1, -1, -1,
+					measurementStr = constructLegacyMeasurementStr(PREF_PO, -1, -1, -1,
 							HR, SPO2, null);
 				} else {
 					Log.w(TAG,
@@ -1582,6 +1597,16 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 					measurementStr = constructMeasurementStr(PREF_PO, -1, -1,
 							-1, HR, SPO2, null);
 				}
+				
+				/*
+				 * To send secure SMS or plain text
+				 */
+				if (secureSMS) {
+					if (legacySMS) {
+						Toast.makeText(getApplicationContext(), "Encryption not defined for legacy SMS format", Toast.LENGTH_SHORT);
+						Log.e(TAG, "Encryption not defined for legacy SMS format");
+						return;
+					}
 
 				// sendSMS(phoneNo, measurementStr);
 				RSAPublicKeySpec publicKeySpec = MyKeyUtils
@@ -1610,6 +1635,13 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 																					// with
 																					// old
 																					// format
+				} else {
+					if (legacySMS) {
+						smsSender.sendPlainText(getApplicationContext(), measurementStr, "From ");
+					} else {
+						smsSender.sendPlainText(getApplicationContext(), measurementStr, "gmstelehealth ");
+					}
+				}
 			}
 		
 
